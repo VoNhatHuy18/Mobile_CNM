@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -45,6 +45,27 @@ const FriendRequestItem = ({ user, onAccept, onReject }) => {
 const FriendListScreen = ({}) => {
   const { userVerified, setUserVerified } = useAuth();
 
+  useEffect(() => {
+    socket.on("received-friend-request", async (response) => {
+      console.log("Received friend request:", response);
+      const updatedUser = await userService.getUserById(userVerified._id);
+      setUserVerified(updatedUser);
+    });
+
+    socket.on("accepted-friend-request", async (response) => {
+      console.log("Accepted friend request:", response);
+      const updatedUser = await userService.getUserById(userVerified._id);
+      setUserVerified(updatedUser);
+    });
+
+    return () => {
+      socket.off("received-friend-request");
+      socket.off("accepted-friend-request");
+    };
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socket]);
+
   const handleAcceptFriendRequest = async (requester) => {
     Alert.alert("Bạn đã đồng ý kết bạn với " + requester.username);
     console.log("Accept friend request");
@@ -81,6 +102,36 @@ const FriendListScreen = ({}) => {
     } catch (error) {
       console.error("Error rejecting friend request:", error);
     }
+  };
+
+  const FriendRequestItem = ({ user, onAccept, onReject }) => {
+    return (
+      <View style={styles.container}>
+        <View style={styles.userInfo}>
+          {user.profilePic ? (
+            <Image source={{ uri: user.profilePic }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarFallback}>
+              <Text style={styles.avatarFallbackText}>
+                {user.username.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+          )}
+          <View style={{ flexDirection: "column" }}>
+            <Text style={styles.username}>{user.username}</Text>
+            <Text style={styles.message}>sent you a friend request</Text>
+          </View>
+          <View style={styles.buttons}>
+            <TouchableOpacity onPress={onAccept} style={styles.acceptButton}>
+              <Text style={styles.buttonText}>Accept</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={onReject} style={styles.rejectButton}>
+              <Text style={styles.buttonText}>Reject</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
   };
 
   return (

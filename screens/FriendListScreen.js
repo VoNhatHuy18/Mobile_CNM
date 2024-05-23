@@ -7,64 +7,62 @@ import {
   StyleSheet,
   Alert,
 } from "react-native";
-
 import { useAuth } from "../provider/AuthProvider";
 import userService from "../services/userService";
 import socket from "../config/socket";
 
 const FriendRequestItem = ({ user, onAccept, onReject }) => {
   return (
-    <View style={styles.container}>
-      <View style={styles.userInfo}>
-        {user.profilePic ? (
-          <Image source={{ uri: user.profilePic }} style={styles.avatar} />
-        ) : (
-          <View style={styles.avatarFallback}>
-            <Text style={styles.avatarFallbackText}>
-              {user.username.charAt(0).toUpperCase()}
-            </Text>
-          </View>
-        )}
-        <View style={{ flexDirection: "column" }}>
-          <Text style={styles.username}>{user.username}</Text>
-          <Text style={styles.message}>sent you a friend request</Text>
+    <View style={styles.userInfo}>
+      {user.profilePic ? (
+        <Image source={{ uri: user.profilePic }} style={styles.avatar} />
+      ) : (
+        <View style={styles.avatarFallback}>
+          <Text style={styles.avatarFallbackText}>
+            {user.username.charAt(0).toUpperCase()}
+          </Text>
         </View>
-        <View style={styles.buttons}>
-          <TouchableOpacity onPress={onAccept} style={styles.acceptButton}>
-            <Text style={styles.buttonText}>Accept</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={onReject} style={styles.rejectButton}>
-            <Text style={styles.buttonText}>Reject</Text>
-          </TouchableOpacity>
-        </View>
+      )}
+      <View style={{ flexDirection: "column", flex: 1 }}>
+        <Text style={styles.username}>{user.username}</Text>
+        <Text style={styles.message}>sent you a friend request</Text>
+      </View>
+      <View style={styles.buttons}>
+        <TouchableOpacity onPress={onAccept} style={styles.acceptButton}>
+          <Text style={styles.buttonText}>Accept</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onReject} style={styles.rejectButton}>
+          <Text style={styles.buttonText}>Reject</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
 };
 
-const FriendListScreen = ({}) => {
+const FriendListScreen = () => {
   const { userVerified, setUserVerified } = useAuth();
 
   useEffect(() => {
-    socket.on("received-friend-request", async (response) => {
+    const handleReceivedFriendRequest = async (response) => {
       console.log("Received friend request:", response);
       const updatedUser = await userService.getUserById(userVerified._id);
       setUserVerified(updatedUser);
-    });
+    };
 
-    socket.on("accepted-friend-request", async (response) => {
+    const handleAcceptedFriendRequest = async (response) => {
       console.log("Accepted friend request:", response);
       const updatedUser = await userService.getUserById(userVerified._id);
       setUserVerified(updatedUser);
-    });
-
-    return () => {
-      socket.off("received-friend-request");
-      socket.off("accepted-friend-request");
     };
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [socket]);
+    socket.on("received-friend-request", handleReceivedFriendRequest);
+    socket.on("accepted-friend-request", handleAcceptedFriendRequest);
+
+    return () => {
+      socket.off("received-friend-request", handleReceivedFriendRequest);
+      socket.off("accepted-friend-request", handleAcceptedFriendRequest);
+    };
+  }, [userVerified._id, setUserVerified]);
 
   const handleAcceptFriendRequest = async (requester) => {
     Alert.alert("Bạn đã đồng ý kết bạn với " + requester.username);
@@ -93,45 +91,13 @@ const FriendListScreen = ({}) => {
         userId: userVerified._id,
       });
 
-      // After rejecting the request, you may want to update the user's friend requests received list
       const userUpdated = await userService.getUserById(userVerified._id);
       setUserVerified(userUpdated);
 
-      // Optionally emit an event to notify other parts of the application about the rejection
       socket.emit("reject-friend-request", response);
     } catch (error) {
       console.error("Error rejecting friend request:", error);
     }
-  };
-
-  const FriendRequestItem = ({ user, onAccept, onReject }) => {
-    return (
-      <View style={styles.container}>
-        <View style={styles.userInfo}>
-          {user.profilePic ? (
-            <Image source={{ uri: user.profilePic }} style={styles.avatar} />
-          ) : (
-            <View style={styles.avatarFallback}>
-              <Text style={styles.avatarFallbackText}>
-                {user.username.charAt(0).toUpperCase()}
-              </Text>
-            </View>
-          )}
-          <View style={{ flexDirection: "column" }}>
-            <Text style={styles.username}>{user.username}</Text>
-            <Text style={styles.message}>sent you a friend request</Text>
-          </View>
-          <View style={styles.buttons}>
-            <TouchableOpacity onPress={onAccept} style={styles.acceptButton}>
-              <Text style={styles.buttonText}>Accept</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={onReject} style={styles.rejectButton}>
-              <Text style={styles.buttonText}>Reject</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    );
   };
 
   return (
@@ -151,9 +117,13 @@ const FriendListScreen = ({}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    padding: 20,
     backgroundColor: "#ffffff",
+  },
+  userInfo: {
+    flexDirection: "row",
+    marginVertical: 10,
+    alignItems: "center",
   },
   avatar: {
     width: 50,
@@ -175,11 +145,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
   },
-  userInfo: {
-    flex: 1,
-    flexDirection: "row",
-    marginVertical: 10,
-  },
   username: {
     fontWeight: "bold",
     fontSize: 16,
@@ -189,16 +154,16 @@ const styles = StyleSheet.create({
   },
   buttons: {
     flexDirection: "row",
-    marginLeft: 15,
+    marginLeft: "auto",
   },
   acceptButton: {
     backgroundColor: "green",
     padding: 10,
     borderRadius: 5,
-
     height: 40,
     width: 70,
     alignItems: "center",
+    justifyContent: "center",
   },
   rejectButton: {
     backgroundColor: "red",
@@ -208,6 +173,7 @@ const styles = StyleSheet.create({
     height: 40,
     width: 70,
     alignItems: "center",
+    justifyContent: "center",
   },
   buttonText: {
     color: "#ffffff",

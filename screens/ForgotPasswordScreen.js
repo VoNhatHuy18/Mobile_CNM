@@ -1,14 +1,42 @@
-import React from "react";
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image } from "react-native";
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator,
+} from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from '@expo/vector-icons';
-const ForgotPasswordScreen = ({ navigation }) => {
-  const [email, setEmail] = React.useState("");
+import { Ionicons } from "@expo/vector-icons";
+import { useAuth } from "../provider/AuthProvider";
+import authService from "../services/authService";
 
-  const handleResetPassword = () => {
-    // Xử lý logic để gửi email reset mật khẩu
-    // Điều hướng người dùng đến màn hình xác nhận email đã gửi
-     navigation.navigate("ChangePassword");
+const ForgotPasswordScreen = ({ navigation }) => {
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState("");
+  const { setUserForVerified } = useAuth();
+
+  const handleResetPassword = async () => {
+    setLoading(true);
+    try {
+      const result = await authService.forgotPassword(email);
+
+      console.log("result", result);
+
+      if (result.data) {
+        setUserForVerified(result.data);
+        console.log("Navigating to ChangePassword");
+        navigation.navigate("ChangePassword");
+      } else {
+        console.log("No data in the response");
+      }
+    } catch (error) {
+      console.log("Error resetting password:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -16,20 +44,32 @@ const ForgotPasswordScreen = ({ navigation }) => {
       colors={["#A44C89", "#4F4F4F", "#545AC8", "#00BCD4"]}
       style={styles.gradient}
     >
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-      <Ionicons name="arrow-back" size={24} color="#3498db" />
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.goBack()}
+      >
+        <Ionicons name="arrow-back" size={24} color="#3498db" />
       </TouchableOpacity>
       <View style={styles.container}>
         <Text style={styles.title}>Quên mật khẩu?</Text>
-        <Text style={styles.subtitle}>Nhập email của bạn để đặt lại mật khẩu</Text>
+        <Text style={styles.subtitle}>
+          Nhập email của bạn để đặt lại mật khẩu
+        </Text>
         <TextInput
           placeholder="Email"
           onChangeText={setEmail}
           value={email}
           style={styles.input}
         />
-        <TouchableOpacity style={styles.button} onPress={handleResetPassword}>
-          <Text style={styles.buttonText}>Gửi Email</Text>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => handleResetPassword()}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={styles.buttonText}>Gửi Email</Text>
+          )}
         </TouchableOpacity>
       </View>
     </LinearGradient>
@@ -43,7 +83,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   backButton: {
-    position: 'absolute',
+    position: "absolute",
     top: 40,
     left: 20,
     zIndex: 1,

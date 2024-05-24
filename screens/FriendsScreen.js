@@ -8,10 +8,23 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
+  Image,
 } from "react-native";
 
 import { useAuth } from "../provider/AuthProvider";
 import userService from "../services/userService";
+
+const Avatar = ({ avatarUrl, username }) => {
+  return avatarUrl ? (
+    <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+  ) : (
+    <View style={styles.fallbackAvatar}>
+      <Text style={styles.fallbackAvatarText}>
+        {username.charAt(0).toUpperCase()}
+      </Text>
+    </View>
+  );
+};
 
 const FriendsScreen = () => {
   const { userVerified, setUserVerified } = useAuth();
@@ -70,7 +83,8 @@ const FriendsScreen = () => {
         keyExtractor={(item) => item._id}
         renderItem={({ item }) => (
           <View style={styles.friendItem}>
-            <Text style={{ fontSize: 25 }}>{item.username}</Text>
+            <Avatar avatarUrl={item.avatar} username={item.username} />
+            <Text style={styles.friendName}>{item.username}</Text>
             <TouchableOpacity
               onPress={() => handleUnfriend(item._id)}
               style={styles.unfriendButton}
@@ -100,15 +114,37 @@ const styles = StyleSheet.create({
   friendItem: {
     marginBottom: 8,
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+  },
+  avatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 16,
+  },
+  fallbackAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#ccc",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 16,
+  },
+  fallbackAvatarText: {
+    color: "white",
+    fontSize: 25,
+    fontWeight: "bold",
+  },
+  friendName: {
+    fontSize: 25,
+    flex: 1,
   },
   unfriendButton: {
     borderRadius: 4,
     backgroundColor: "#f56565",
     paddingVertical: 4,
     paddingHorizontal: 8,
-    transitionDuration: "75ms",
   },
   unfriendButtonText: {
     color: "white",

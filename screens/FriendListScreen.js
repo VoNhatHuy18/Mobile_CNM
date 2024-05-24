@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { useAuth } from "../provider/AuthProvider";
 import userService from "../services/userService";
-import socket from "../config/socket";
+import socket from "../config/socket"; // Ensure socket is initialized correctly
 
 const FriendRequestItem = ({ user, onAccept, onReject }) => {
   return (
@@ -41,12 +41,16 @@ const FriendRequestItem = ({ user, onAccept, onReject }) => {
 
 const FriendListScreen = () => {
   const { userVerified, setUserVerified } = useAuth();
+  const [friendRequests, setFriendRequests] = useState(
+    userVerified.friendRequestsReceived || []
+  );
 
   useEffect(() => {
     const handleReceivedFriendRequest = async (response) => {
       console.log("Received friend request:", response);
       const updatedUser = await userService.getUserById(userVerified._id);
       setUserVerified(updatedUser);
+      setFriendRequests(updatedUser.friendRequestsReceived); // Update state with new friend requests
     };
 
     const handleAcceptedFriendRequest = async (response) => {
@@ -65,7 +69,9 @@ const FriendListScreen = () => {
   }, [userVerified._id, setUserVerified]);
 
   const handleAcceptFriendRequest = async (requester) => {
-    Alert.alert("Bạn đã đồng ý kết bạn với " + requester.username);
+    Alert.alert(
+      "You have accepted the friend request from " + requester.username
+    );
     console.log("Accept friend request");
     try {
       const response = await userService.acceptFriendRequest({
@@ -75,15 +81,21 @@ const FriendListScreen = () => {
 
       const userUpdated = await userService.getUserById(userVerified._id);
       setUserVerified(userUpdated);
+      setFriendRequests(userUpdated.friendRequestsReceived); // Update state with new friend requests
 
-      socket.emit("accept-friend-request", response);
+      socket.emit("accept-friend-request", {
+        requesterId: requester._id,
+        userId: userVerified._id,
+      });
     } catch (error) {
       console.error("Error accepting friend request:", error);
     }
   };
 
   const handleReject = async (requester) => {
-    Alert.alert("Bạn đã từ chối lời mời kết bạn của " + requester.username);
+    Alert.alert(
+      "You have rejected the friend request from " + requester.username
+    );
     console.log("Reject friend request");
     try {
       const response = await userService.rejectedFriendRequest({
@@ -93,8 +105,12 @@ const FriendListScreen = () => {
 
       const userUpdated = await userService.getUserById(userVerified._id);
       setUserVerified(userUpdated);
+      setFriendRequests(userUpdated.friendRequestsReceived); // Update state with new friend requests
 
-      socket.emit("reject-friend-request", response);
+      socket.emit("reject-friend-request", {
+        requesterId: requester._id,
+        userId: userVerified._id,
+      });
     } catch (error) {
       console.error("Error rejecting friend request:", error);
     }
@@ -102,7 +118,7 @@ const FriendListScreen = () => {
 
   return (
     <View style={styles.container}>
-      {userVerified.friendRequestsReceived.map((request) => (
+      {friendRequests.map((request) => (
         <FriendRequestItem
           key={request._id}
           user={request}

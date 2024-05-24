@@ -5,26 +5,25 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
-  TextInput,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../provider/AuthProvider";
 import * as ImagePicker from "expo-image-picker";
 
 const SettingsScreen = ({ navigation }) => {
-  const { userVerified, setUserVerified } = useAuth();
-  const [image, setImage] = useState(null);
-  const [hasGellery, setHasGallery] = useState(null);
+  const { userVerified, setUserVerified, updateUserProfilePic } = useAuth();
+  const [hasGalleryPermission, setHasGalleryPermission] = useState(null);
 
   useEffect(() => {
     (async () => {
-      const GalleryStatus =
+      const galleryStatus =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
-      setHasGallery(GalleryStatus.status === "granted");
+      setHasGalleryPermission(galleryStatus.status === "granted");
     })();
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setUserVerified(null);
     navigation.navigate("Login");
   };
@@ -37,16 +36,17 @@ const SettingsScreen = ({ navigation }) => {
       quality: 1,
     });
 
-    console.log(result);
-
-    if (!result.cancelled) {
-      setImage(result.uri);
+    if (!result.canceled) {
+      const newProfilePic = result.assets[0].uri;
+      updateUserProfilePic(newProfilePic);
+      Alert.alert("Success", "Avatar updated successfully!");
     }
   };
 
-  if (hasGellery === false) {
-    return <Text>No Access</Text>;
+  if (hasGalleryPermission === false) {
+    return <Text>No Access to Gallery</Text>;
   }
+
   return (
     <View style={styles.container}>
       <TouchableOpacity
@@ -55,30 +55,28 @@ const SettingsScreen = ({ navigation }) => {
       >
         <Ionicons name="arrow-back" size={24} color="#333" />
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => pickImage()}>
+      <TouchableOpacity onPress={pickImage}>
         <Image
           source={
-            userVerified.profilePic
+            userVerified?.profilePic
               ? { uri: userVerified.profilePic }
               : {
-                  uri: `https://ui-avatars.com/api/?name=${userVerified.username[0]}&background=random&size=120&bold=true`,
+                  uri: `https://ui-avatars.com/api/?name=${userVerified?.username[0]}&background=random&size=120&bold=true`,
                 }
           }
           style={styles.avatar}
         />
       </TouchableOpacity>
-      {image && <Image source={{ uri: image }} />}
-      <Text style={styles.username}>{userVerified.username}</Text>
-
-      <TouchableOpacity onPress={handleLogout} style={styles.button}>
-        <Text style={styles.buttonText}>Logout</Text>
-      </TouchableOpacity>
-
+      <Text style={styles.username}>{userVerified?.username}</Text>
       <TouchableOpacity
-        onPress={() => navigation.navigate("ChangePassword")}
+        onPress={() => navigation.navigate("RechangePassword")}
         style={styles.button}
       >
         <Text style={styles.buttonText}>Change Password</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={handleLogout} style={styles.button}>
+        <Text style={styles.buttonText}>Logout</Text>
       </TouchableOpacity>
     </View>
   );
@@ -105,24 +103,6 @@ const styles = StyleSheet.create({
   username: {
     fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 20,
-  },
-  usernameInput: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 20,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderColor: "#ccc",
-    borderWidth: 1,
-    borderRadius: 10,
-    width: "80%",
-  },
-  saveButton: {
-    backgroundColor: "#28a745",
-    paddingVertical: 12,
-    paddingHorizontal: 50,
-    borderRadius: 25,
     marginBottom: 20,
   },
   button: {

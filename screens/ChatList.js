@@ -228,12 +228,12 @@ const ChatList = ({ chats, navigation }) => {
                   setSelectedRoom(item);
                   navigation.navigate("ChatScreen");
                 }}
-                onLongPress={() => handleLongPressRoom(item)}
+                // onLongPress={() => handleLongPressRoom(item)}
               >
                 {renderAvatar(item.profilePic, getRoomName(item))}
                 <Text style={styles.sender}>{getRoomName(item)}</Text>
               </TouchableOpacity>
-              <Modal
+              {/* <Modal
                 isVisible={popupVisible}
                 onBackdropPress={() => setPopupVisible(false)}
                 backdropOpacity={0.5}
@@ -252,7 +252,7 @@ const ChatList = ({ chats, navigation }) => {
                     </TouchableOpacity>
                   </View>
                 </View>
-              </Modal>
+              </Modal> */}
             </>
           )}
           keyExtractor={(item) => item._id.toString()}

@@ -9,14 +9,31 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
+import { useAuth } from "../provider/AuthProvider";
+import authService from "../services/authService";
 
 const ChangePasswordScreen = ({ navigation }) => {
   const [otp, setOTP] = useState("");
-  const [newPassword, setNewPassword] = useState("");
+  const [password, setPassword] = useState("");
+  const { userForVerified, setUserForVerified } = useAuth();
 
-  const handleChangePassword = () => {
-    // Xử lý logic thay đổi mật khẩu dựa trên mã OTP và mật khẩu mới
-    // Sau đó điều hướng người dùng đến màn hình thông báo thành công hoặc thất bại
+  const handleChangePassword = async () => {
+    try {
+      const result = await authService.verifyOtp(userForVerified.userId, otp);
+      console.log("result", result);
+      if (result.data) {
+        const resetPasswordResult = await authService.resetPassword(
+          userForVerified.userId,
+          password
+        );
+        console.log("reset", resetPasswordResult);
+        setUserForVerified(null);
+        navigation.navigate("Login");
+      }
+    } catch (error) {
+      toast.error("An error occurred. Please try again.");
+      console.log(error);
+    }
   };
 
   return (
@@ -36,8 +53,8 @@ const ChangePasswordScreen = ({ navigation }) => {
         <TextInput
           style={styles.input}
           placeholder="Mật khẩu mới"
-          onChangeText={setNewPassword}
-          value={newPassword}
+          onChangeText={setPassword}
+          value={password}
           secureTextEntry={true}
         />
         <TouchableOpacity style={styles.button} onPress={handleChangePassword}>
@@ -63,7 +80,6 @@ const styles = StyleSheet.create({
   },
   gradient: {
     flex: 1,
-    
   },
   title: {
     fontSize: 24,

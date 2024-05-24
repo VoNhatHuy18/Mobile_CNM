@@ -71,7 +71,6 @@ const ChatScreen = ({ route, navigation }) => {
       if (newMessage.trim() === "") {
         return;
       }
-
       const messageData = {
         senderId: userVerified._id,
         content: newMessage,
@@ -329,13 +328,12 @@ const ChatScreen = ({ route, navigation }) => {
       )}
       <View style={styles.inputContainer}>
         <TouchableOpacity style={styles.iconButton}>
-          <Ionicons name="camera" size={24} color="#333333" />
+          <Ionicons name="folder-outline" size={24} color="#333333" />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => pickImage()} style={styles.iconButton}>
-          <Ionicons name="image" size={24} color="#333333" />
+          <Ionicons name="image-outline" size={24} color="#333333" />
         </TouchableOpacity>
         {image && <Image source={{ uri: image }} />}
-
         <TextInput
           style={styles.input}
           placeholder="Type a message"

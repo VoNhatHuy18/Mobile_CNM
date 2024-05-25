@@ -14,7 +14,6 @@ import OtpScreen from "./screens/OtpScreen";
 import AddMembersScreen from "./screens/AddMembersScreen";
 import InfoScreen from "./screens/InfoScreen";
 import FriendsScreen from "./screens/FriendsScreen";
-
 import GroupInfoScreen from "./screens/GroupInfoScreen";
 
 import { AuthProvider } from "./provider/AuthProvider";

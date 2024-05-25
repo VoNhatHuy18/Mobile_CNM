@@ -148,27 +148,27 @@ const ChatList = ({ chats, navigation }) => {
     );
   };
 
-  const handleLongPressRoom = (room) => {
-    if (room.type === "group") return; // Don't show popup for group rooms
-    setSelectedRoomForPopup(room);
-    setPopupVisible(true);
-  };
+  // const handleLongPressRoom = (room) => {
+  //   if (room.type === "group") return; // Don't show popup for group rooms
+  //   setSelectedRoomForPopup(room);
+  //   setPopupVisible(true);
+  // };
 
-  const handleUnfriend = async (userId) => {
-    try {
-      const response = await userService.unfriend({
-        userId: userVerified._id,
-        friendId: userId,
-      });
-      console.log("Unfriend response:", response);
+  // const handleUnfriend = async (userId) => {
+  //   try {
+  //     const response = await userService.unfriend({
+  //       userId: userVerified._id,
+  //       friendId: userId,
+  //     });
+  //     console.log("Unfriend response:", response);
 
-      // setFilteredUsers((prevUsers) =>
-      //   prevUsers.filter((user) => user._id !== userId)
-      // );
-    } catch (error) {
-      console.error("Error unfriending user:", error);
-    }
-  };
+  //     // setFilteredUsers((prevUsers) =>
+  //     //   prevUsers.filter((user) => user._id !== userId)
+  //     // );
+  //   } catch (error) {
+  //     console.error("Error unfriending user:", error);
+  //   }
+  // };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -262,7 +262,7 @@ const ChatList = ({ chats, navigation }) => {
       <View style={styles.settingsButton}>
         <TouchableOpacity onPress={() => navigation.navigate("FriendList")}>
           <Ionicons
-            name="person-outline"
+            name="person-add-outline"
             size={24}
             color={pendingFriendRequests.length > 0 ? "red" : "black"}
           />
@@ -271,10 +271,10 @@ const ChatList = ({ chats, navigation }) => {
           )}
         </TouchableOpacity>
         <TouchableOpacity onPress={() => navigation.navigate("AddMembers")}>
-          <Ionicons name="person-add-outline" size={24} color="black" />
+          <Ionicons name="people-outline" size={24} color="black" />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => navigation.navigate("Friend")}>
-          <Ionicons name="people-outline" size={24} color="black" />
+          <Ionicons name="person-outline" size={24} color="black" />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => navigation.navigate("Setting")}>
           <Ionicons name="settings-outline" size={24} color="black" />

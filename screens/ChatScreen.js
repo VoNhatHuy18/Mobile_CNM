@@ -68,13 +68,28 @@ const ChatScreen = ({ route, navigation }) => {
   const handleSendMessage = async () => {
     setLoading(true);
     try {
-      if (newMessage.trim() === "") {
+      if (newMessage.trim() === "" && !image) {
         return;
       }
+
+      let images = [];
+      if (image) {
+        // Upload the image and get the URL
+        const formData = new FormData();
+        formData.append("image", {
+          uri: image,
+          name: "chat-image.jpg",
+          type: "image/jpeg",
+        });
+
+        const uploadResponse = await chatService.uploadImage(formData);
+        images.push(uploadResponse.url);
+      }
+
       const messageData = {
         senderId: userVerified._id,
         content: newMessage,
-        images: [],
+        images: images,
         roomId: selectedRoom._id,
         replyMessageId: replyingMessage ? replyingMessage._id : null,
       };
@@ -90,6 +105,7 @@ const ChatScreen = ({ route, navigation }) => {
 
       setMessages([...messages, response]);
       setNewMessage("");
+      setImage(null);
 
       socket.emit("send-message", { savedMessage: response });
     } catch (error) {
@@ -97,7 +113,7 @@ const ChatScreen = ({ route, navigation }) => {
     } finally {
       setLoading(false);
       fetchUpdatedRooms();
-      setReplyingMessage("");
+      setReplyingMessage(null);
       setIsReplying(false);
       socket.emit("sort-room", { userId: userVerified._id });
     }
@@ -200,11 +216,12 @@ const ChatScreen = ({ route, navigation }) => {
         navigation.navigate("GroupInfo", { selectedRoom });
       }
       if (selectedRoom.type === "1v1") {
-        navigation.navigate("Info", {
-          friendId: selectedRoom.members.find(
-            (member) => member._id !== userVerified._id
-          )._id,
-        });
+        // navigation.navigate("Info", {
+        //   friendId: selectedRoom.members.find(
+        //     (member) => member._id !== userVerified._id
+        //   )._id,
+        // });
+        return;
       }
     } catch (error) {
       console.error("Error navigating to info screen:", error);
@@ -284,7 +301,6 @@ const ChatScreen = ({ route, navigation }) => {
                     isSentMessage ? styles.sentMessage : styles.receivedMessage,
                   ]}
                 >
-                  {/* add username to message */}
                   <Text style={styles.username}>{message.sender.username}</Text>
                   {message.replyTo && (
                     <View style={styles.replyContainer}>
@@ -292,6 +308,12 @@ const ChatScreen = ({ route, navigation }) => {
                         {message.replyTo.content}
                       </Text>
                     </View>
+                  )}
+                  {message.images.length > 0 && (
+                    <Image
+                      source={{ uri: message.images[0] }}
+                      style={styles.messageImage}
+                    />
                   )}
                   <Text style={styles.messageText}>{message.content}</Text>
                   <Text style={styles.messageTime}>
@@ -575,6 +597,12 @@ const styles = StyleSheet.create({
   username: {
     fontSize: 15,
     textAlign: "left",
+  },
+  messageImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 10,
+    marginVertical: 10,
   },
 });
 

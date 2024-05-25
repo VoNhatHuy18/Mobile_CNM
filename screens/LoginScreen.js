@@ -24,7 +24,7 @@ const LoginScreen = ({ navigation }) => {
     if (userVerified) {
       navigation.navigate("ChatList");
     } else {
-      navigation.navigate("Login");
+      return;
     }
   }, [userVerified]);
 

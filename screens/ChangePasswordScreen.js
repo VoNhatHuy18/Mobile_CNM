@@ -21,7 +21,7 @@ const ChangePasswordScreen = ({ navigation }) => {
     try {
       const result = await authService.verifyOtp(userForVerified.userId, otp);
       console.log("result", result);
-      if (result.data) {
+      if (result) {
         const resetPasswordResult = await authService.resetPassword(
           userForVerified.userId,
           password
@@ -31,7 +31,6 @@ const ChangePasswordScreen = ({ navigation }) => {
         navigation.navigate("Login");
       }
     } catch (error) {
-      toast.error("An error occurred. Please try again.");
       console.log(error);
     }
   };

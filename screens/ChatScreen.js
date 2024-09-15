@@ -65,6 +65,20 @@ const ChatScreen = ({ route, navigation }) => {
     })();
   }, []);
 
+  useEffect(() => {
+    socket.on("deleted-message", (data) => {
+      console.log("Received deleted message:", data);
+      setMessages((prevMessages) =>
+        prevMessages.filter((msg) => msg._id !== data.messageId)
+      );
+    });
+
+    return () => {
+      socket.off("deleted-message");
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socket]);
+
   const handleSendMessage = async () => {
     setLoading(true);
     try {
@@ -105,7 +119,7 @@ const ChatScreen = ({ route, navigation }) => {
 
       setMessages([...messages, response]);
       setNewMessage("");
-      setImage(null);
+      setImage("");
 
       socket.emit("send-message", { savedMessage: response });
     } catch (error) {
@@ -113,7 +127,7 @@ const ChatScreen = ({ route, navigation }) => {
     } finally {
       setLoading(false);
       fetchUpdatedRooms();
-      setReplyingMessage(null);
+      setReplyingMessage("");
       setIsReplying(false);
       socket.emit("sort-room", { userId: userVerified._id });
     }
@@ -130,25 +144,21 @@ const ChatScreen = ({ route, navigation }) => {
     setShowPopup(false);
   };
 
-  const handleDelete = async () => {
+  const handleDelete = async (message) => {
     if (selectedMessage) {
       try {
         if (selectedMessage.sender._id === userVerified._id) {
-          // If the user is the sender of the message, delete it
           await chatService.deleteMessage(selectedMessage._id);
           setMessages(
             messages.filter((msg) => msg._id !== selectedMessage._id)
           );
         } else {
-          // If the user is not the sender, mark the message as hidden/deleted for the current user
-          await chatService.deleteMessage(selectedMessage._id); // You need to implement this function in chatService
-          setMessages(
-            messages.map((msg) =>
-              msg._id === selectedMessage._id ? { ...msg, hidden: true } : msg
-            )
-          );
+          // Handle error
         }
         setShowPopup(false);
+        socket.emit("delete-message", {
+          messageId: message._id,
+        });
       } catch (error) {
         console.error("Error deleting message:", error);
         // Handle error
@@ -270,71 +280,105 @@ const ChatScreen = ({ route, navigation }) => {
           const senderProfilePic = message.sender.profilePic;
           const senderInitials = getInitials(message.sender.username);
           return (
-            <TouchableWithoutFeedback
-              key={index}
-              onLongPress={() => handleLongPressMessage(message)}
-            >
-              <View
-                style={[
-                  styles.messageContainer,
-                  isSentMessage
-                    ? styles.messageContainerRight
-                    : styles.messageContainerLeft,
-                ]}
-              >
-                {!isSentMessage &&
-                  (senderProfilePic ? (
-                    <Image
-                      source={{ uri: senderProfilePic }}
-                      style={styles.avatarSmallLeft}
-                    />
-                  ) : (
-                    <View style={styles.fallbackAvatar}>
-                      <Text style={styles.fallbackAvatarText}>
-                        {senderInitials}
-                      </Text>
+            <>
+              {showPopup && (
+                <Modal
+                  transparent={true}
+                  animationType="slide"
+                  visible={showPopup}
+                  onRequestClose={() => setShowPopup(false)}
+                >
+                  <TouchableWithoutFeedback onPress={() => setShowPopup(false)}>
+                    <View style={styles.modalOverlay}>
+                      <View style={styles.popupContainer}>
+                        <TouchableOpacity
+                          style={styles.popupButton}
+                          onPress={handleReply}
+                        >
+                          <Text style={styles.popupButtonText}>Reply</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.popupButton}
+                          onPress={() => handleDelete(message)}
+                        >
+                          <Text style={styles.popupButtonText}>Delete</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
-                  ))}
+                  </TouchableWithoutFeedback>
+                </Modal>
+              )}
+
+              <TouchableWithoutFeedback
+                key={index}
+                onLongPress={() => handleLongPressMessage(message)}
+              >
                 <View
                   style={[
-                    styles.messageBubble,
-                    isSentMessage ? styles.sentMessage : styles.receivedMessage,
+                    styles.messageContainer,
+                    isSentMessage
+                      ? styles.messageContainerRight
+                      : styles.messageContainerLeft,
                   ]}
                 >
-                  <Text style={styles.username}>{message.sender.username}</Text>
-                  {message.replyTo && (
-                    <View style={styles.replyContainer}>
-                      <Text style={styles.replyText}>
-                        {message.replyTo.content}
-                      </Text>
-                    </View>
-                  )}
-                  {message.images.length > 0 && (
-                    <Image
-                      source={{ uri: message.images[0] }}
-                      style={styles.messageImage}
-                    />
-                  )}
-                  <Text style={styles.messageText}>{message.content}</Text>
-                  <Text style={styles.messageTime}>
-                    {formatMessageTime(message.timestamp)}
-                  </Text>
+                  {!isSentMessage &&
+                    (senderProfilePic ? (
+                      <Image
+                        source={{ uri: senderProfilePic }}
+                        style={styles.avatarSmallLeft}
+                      />
+                    ) : (
+                      <View style={styles.fallbackAvatar}>
+                        <Text style={styles.fallbackAvatarText}>
+                          {senderInitials}
+                        </Text>
+                      </View>
+                    ))}
+                  <View
+                    style={[
+                      styles.messageBubble,
+                      isSentMessage
+                        ? styles.sentMessage
+                        : styles.receivedMessage,
+                    ]}
+                  >
+                    <Text style={styles.username}>
+                      {message.sender.username}
+                    </Text>
+                    {message.replyTo && (
+                      <View style={styles.replyContainer}>
+                        <Text style={styles.replyText}>
+                          {message.replyTo.content}
+                        </Text>
+                      </View>
+                    )}
+                    {message.images.length > 0 && (
+                      <Image
+                        source={{ uri: message.images[0] }}
+                        style={styles.messageImage}
+                      />
+                    )}
+                    <Text style={styles.messageText}>{message.content}</Text>
+                    <Text style={styles.messageTime}>
+                      {formatMessageTime(message.timestamp)}
+                    </Text>
+                  </View>
+                  {isSentMessage &&
+                    (senderProfilePic ? (
+                      <Image
+                        source={{ uri: senderProfilePic }}
+                        style={styles.avatarSmallRight}
+                      />
+                    ) : (
+                      <View style={styles.fallbackAvatar}>
+                        <Text style={styles.fallbackAvatarText}>
+                          {senderInitials}
+                        </Text>
+                      </View>
+                    ))}
                 </View>
-                {isSentMessage &&
-                  (senderProfilePic ? (
-                    <Image
-                      source={{ uri: senderProfilePic }}
-                      style={styles.avatarSmallRight}
-                    />
-                  ) : (
-                    <View style={styles.fallbackAvatar}>
-                      <Text style={styles.fallbackAvatarText}>
-                        {senderInitials}
-                      </Text>
-                    </View>
-                  ))}
-              </View>
-            </TouchableWithoutFeedback>
+              </TouchableWithoutFeedback>
+            </>
           );
         })}
       </ScrollView>
@@ -376,33 +420,6 @@ const ChatScreen = ({ route, navigation }) => {
           <Ionicons name="send" size={24} color="#ffffff" />
         </TouchableOpacity>
       </View>
-      {showPopup && (
-        <Modal
-          transparent={true}
-          animationType="slide"
-          visible={showPopup}
-          onRequestClose={() => setShowPopup(false)}
-        >
-          <TouchableWithoutFeedback onPress={() => setShowPopup(false)}>
-            <View style={styles.modalOverlay}>
-              <View style={styles.popupContainer}>
-                <TouchableOpacity
-                  style={styles.popupButton}
-                  onPress={handleReply}
-                >
-                  <Text style={styles.popupButtonText}>Reply</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.popupButton}
-                  onPress={handleDelete}
-                >
-                  <Text style={styles.popupButtonText}>Delete</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </TouchableWithoutFeedback>
-        </Modal>
-      )}
     </View>
   );
 };
